@@ -14,7 +14,7 @@ class Strategy:
         self.cols = cols
         self.ships_dict = ships_dict
         
-        # Tady vytvoříme 2D seznam otazníků '?', znamenající "neznámé pole"
+        # Initialize the enemy board with '?' to represent unknown positions
         self.enemy_board = [['?' for _ in range(cols)] for _ in range(rows)]
 
     def get_next_attack(self) -> tuple[int, int]:
@@ -24,15 +24,13 @@ class Strategy:
         Must be within [0 .. cols-1], [0 .. rows-1].
         Assume we will never call this function if all ships are sunk.
         """
-        # V současné chvíli se může zvolit náhodná pozice pro útok
-        # Pokročilejší strategie by mohly zahrnovat různé algoritmy pro určení
-        # nejlepšího bodu pro útok, například podle okolí zásahů.
-        # Prozatím vybíráme první nevyzkoušené místo.
+        # Advanced strategies can include algorithms that consider surrounding hits, 
+        # but for now, we choose the first available position.
         for y in range(self.rows):
             for x in range(self.cols):
                 if self.enemy_board[y][x] == '?':
                     return x, y
-        raise ValueError("No valid attack spots left.")  # Pokud je board celý prozkoumán
+        raise ValueError("No valid attack spots left.")  # If the entire board is explored
 
     def register_attack(self, x: int, y: int, is_hit: bool, is_sunk: bool) -> None:
         """
@@ -43,14 +41,14 @@ class Strategy:
         If is_sunk == True, we should decrement the count of one ship in ships_dict (you need to find out which ID).
         You should update the enemy board appropriately too.
         """
-        # Zaznamenáme výsledek útoku
+        # Record the result of the attack
         if is_hit:
             self.enemy_board[y][x] = 'H'  # H = hit
         else:
             self.enemy_board[y][x] = 'M'  # M = miss
 
         if is_sunk:
-            # Najdeme loď, která byla potopena a snížíme její počet v ships_dict
+            # Find the ship that was sunk and decrease its count in ships_dict
             for ship_id in list(self.ships_dict):
                 if self.ships_dict[ship_id] > 0:
                     self.ships_dict[ship_id] -= 1
@@ -63,19 +61,32 @@ class Strategy:
         You may optionally use 'S' for sunk ships (not required).
         You may optionally use 'X' for tiles that are impossible to contain a ship (not required).
         """
-        # Vrátí aktuální stav našeho "znalostního" boardu
+        # Return the current knowledge state of the enemy board
         return self.enemy_board
 
     def get_remaining_ships(self) -> dict[int, int]:
         """
         Returns the dictionary of ship_id -> count for ships we believe remain afloat.
         """
-        # Vrátí stav zbylých lodí
+        # Return the remaining ships with counts greater than 0
         return {ship_id: count for ship_id, count in self.ships_dict.items() if count > 0}
 
     def all_ships_sunk(self) -> bool:
         """
         Returns True if all enemy ships are sunk (ships_dict counts are all zero).
         """
-        # Pokud jsou všechny lodě potopeny, všechny hodnoty v ships_dict budou 0
+        # If all ships are sunk, all values in ships_dict will be 0
         return all(count == 0 for count in self.ships_dict.values())
+
+    def find_possible_ships(self) -> list:
+        """
+        This method identifies the possible positions for ships based on the current state of the enemy board.
+        It can be useful for advanced strategies such as targeting clusters of hits.
+        """
+        possible_ships = []
+        for y in range(self.rows):
+            for x in range(self.cols):
+                if self.enemy_board[y][x] == 'H':
+                    # Expand search area around the hit
+                    possible_ships.append((x, y))
+        return possible_ships
