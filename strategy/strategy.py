@@ -1,13 +1,3 @@
-"""
-strategy.py
-
-This module contains the Strategy class responsible for:
- - Tracking the known state of the enemy board.
- - Deciding which (x, y) cell to attack next.
- - Registering the result of each attack (hit/miss, sunk).
- - Keeping track of remaining enemy ships in a ships_dict.
-"""
-
 class Strategy:
     def __init__(self, rows: int, cols: int, ships_dict: dict[int, int]):
         """
@@ -34,7 +24,15 @@ class Strategy:
         Must be within [0 .. cols-1], [0 .. rows-1].
         Assume we will never call this function if all ships are sunk.
         """
-        raise NotImplementedError("get_next_attack() is not implemented yet.")
+        # V současné chvíli se může zvolit náhodná pozice pro útok
+        # Pokročilejší strategie by mohly zahrnovat různé algoritmy pro určení
+        # nejlepšího bodu pro útok, například podle okolí zásahů.
+        # Prozatím vybíráme první nevyzkoušené místo.
+        for y in range(self.rows):
+            for x in range(self.cols):
+                if self.enemy_board[y][x] == '?':
+                    return x, y
+        raise ValueError("No valid attack spots left.")  # Pokud je board celý prozkoumán
 
     def register_attack(self, x: int, y: int, is_hit: bool, is_sunk: bool) -> None:
         """
@@ -45,8 +43,18 @@ class Strategy:
         If is_sunk == True, we should decrement the count of one ship in ships_dict (you need to find out which ID).
         You should update the enemy board appropriately too.
         """
-        # Tady zaznamenáme výsledek útoku (hit or miss, I guess they never miss, huh), případně potopení
-        raise NotImplementedError("register_attack() is not implemented yet.")
+        # Zaznamenáme výsledek útoku
+        if is_hit:
+            self.enemy_board[y][x] = 'H'  # H = hit
+        else:
+            self.enemy_board[y][x] = 'M'  # M = miss
+
+        if is_sunk:
+            # Najdeme loď, která byla potopena a snížíme její počet v ships_dict
+            for ship_id in list(self.ships_dict):
+                if self.ships_dict[ship_id] > 0:
+                    self.ships_dict[ship_id] -= 1
+                    break
 
     def get_enemy_board(self) -> list[list[str]]:
         """
@@ -55,16 +63,19 @@ class Strategy:
         You may optionally use 'S' for sunk ships (not required).
         You may optionally use 'X' for tiles that are impossible to contain a ship (not required).
         """
-        raise NotImplementedError("get_enemy_board() is not implemented yet.")
+        # Vrátí aktuální stav našeho "znalostního" boardu
+        return self.enemy_board
 
     def get_remaining_ships(self) -> dict[int, int]:
         """
         Returns the dictionary of ship_id -> count for ships we believe remain afloat.
         """
-        raise NotImplementedError("get_remaining_ships() is not implemented yet.")
+        # Vrátí stav zbylých lodí
+        return {ship_id: count for ship_id, count in self.ships_dict.items() if count > 0}
 
     def all_ships_sunk(self) -> bool:
         """
         Returns True if all enemy ships are sunk (ships_dict counts are all zero).
         """
-        raise NotImplementedError("all_ships_sunk() is not implemented yet.")
+        # Pokud jsou všechny lodě potopeny, všechny hodnoty v ships_dict budou 0
+        return all(count == 0 for count in self.ships_dict.values())
